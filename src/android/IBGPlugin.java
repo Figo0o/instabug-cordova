@@ -1,6 +1,7 @@
 package com.instabug.cordova.plugin;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 
 import com.instabug.library.Instabug;
@@ -91,7 +92,7 @@ public class IBGPlugin extends CordovaPlugin {
             showIntroDialog(callbackContext);
 
         } else if ("setPrimaryColor".equals(action)) {
-            setPrimaryColor(callbackContext, args.optInt(0));
+            setPrimaryColor(callbackContext, args.optString(0));
 
         } else if ("setUserEmail".equals(action)) {
             setUserEmail(callbackContext, args.optString(0));
@@ -123,6 +124,9 @@ public class IBGPlugin extends CordovaPlugin {
         } else if ("isEnabled".equals(action)) {
             getIsEnabled(callbackContext);
             
+        } else if ("setDebugEnabled".equals(action)) {
+            setDebugEnabled(callbackContext, args.optBoolean(0));
+            
         } else {
             // Method not found.
             return false;
@@ -138,53 +142,14 @@ public class IBGPlugin extends CordovaPlugin {
      *        Used when calling back into JavaScript
      */
     private void activate(final CallbackContext callbackContext, JSONArray args) {
-        JSONObject tokensForPlatforms = args.optJSONObject(0);
-
-        if (tokensForPlatforms != null) {
-            String token = tokensForPlatforms.optString("android");
-
-            if (token != null && token.length() > 0) {
-                activationIntent.putExtra("token", token);
-
-                String invocationEvent = args.optString(1);
-
-                if (invocationEvent != null && invocationEvent.length() > 0) {
-                    activationIntent.putExtra("invocationEvent", invocationEvent);
-                } else {
-                    // Desired invocation event may be different across platforms
-                    // and can be specified as such
-                    JSONObject invEventsForPlatforms = args.optJSONObject(1);
-
-                    if (invEventsForPlatforms != null) {
-                        String invEvent = invEventsForPlatforms.optString("android");
-
-                        if (invEvent != null && invEvent.length() > 0) {
-                            activationIntent.putExtra("invocationEvent", invEvent);
-                        }
-                    }
-                }
-
-                this.options = args.optJSONObject(2);
-
-                if (options != null) {
-                    // Attach extras
-                    applyOptions();
-                }
-
-                // Start activity to initialize Instabug
-                cordova.getActivity().startActivity(activationIntent);
-
-                callbackContext.success();
-
-            } else {
-                // Without a token, Instabug cannot be initialized.
-                callbackContext.error("An application token must be provided.");
-            }
-        } else {
-            // Without a token, Instabug cannot be initialized.
-            callbackContext.error("An application token must be provided.");
+        this.options = args.optJSONObject(0);
+        if (options != null) {
+            // Attach extras
+            applyOptions();
         }
+        cordova.getActivity().startActivity(activationIntent);
 
+        callbackContext.success();
 
         
     }
@@ -240,9 +205,11 @@ public class IBGPlugin extends CordovaPlugin {
      * @param colorInt
      *        The value of the primary color
      */
-    private void setPrimaryColor(final CallbackContext callbackContext,Integer colorInt) {
-        if (colorInt != null) {
+    private void setPrimaryColor(final CallbackContext callbackContext, String colorString) {
+        
+        if (colorString != null) {
          try {
+             int colorInt = Color.parseColor(colorString);
             Instabug.setPrimaryColor(colorInt);
 
          } catch (IllegalStateException e) {
@@ -465,7 +432,7 @@ public class IBGPlugin extends CordovaPlugin {
      * @param callbackContext 
      *        Used when calling back into JavaScript
      */
-    private void setDebugEnabled(final CallbackContext callbackContext,boolean isDebugEnabled) {
+    private void setDebugEnabled(final CallbackContext callbackContext, boolean isDebugEnabled) {
         try {
             Instabug.setDebugEnabled(isDebugEnabled);
             callbackContext.success();
